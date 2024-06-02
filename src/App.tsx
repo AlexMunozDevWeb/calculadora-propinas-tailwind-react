@@ -1,12 +1,11 @@
 
-import './App.css'
-
 function App() {
 
 
   return (
     <>
-      <h1>Hola Mundo</h1>
+      <h1 className="text-lg font-black">Hello world!</h1>
+      <p className="text-xs">Hola mundo 2</p>
     </>
   )
 }
