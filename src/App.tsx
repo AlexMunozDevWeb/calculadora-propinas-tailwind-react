@@ -1,11 +1,13 @@
+import { menuItems } from "./data/db";
 
 function App() {
-
+console.log(menuItems);
 
   return (
     <>
-      <h1 className="text-lg font-black">Hello world!</h1>
-      <p className="text-xs">Hola mundo 2</p>
+      <header className="bg-teal-400 py-5">
+        <h1 className="text-center text-4xl font-black">Calculadora de propinas y consumo</h1>
+      </header>
     </>
   )
 }
