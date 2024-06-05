@@ -1,5 +1,9 @@
 # Calculadora de propinas 
 
+## Extensiones React para VSCode
+- ES7+ React/Redux/React-Native snippets
+- Simple React Snippets (atajos como rafce, para imports etc..)
+
 ## Instalación de Tailwind
 #### Ventajas
 
