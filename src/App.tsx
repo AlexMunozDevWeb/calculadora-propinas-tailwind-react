@@ -7,7 +7,7 @@ function App() {
   
 console.log(menuItems);
 
-  const { order, addItem } = useOrder()
+  const { order, addItem, removeItem } = useOrder()
 
   return (
     <>
@@ -33,6 +33,7 @@ console.log(menuItems);
         <div className="border border-dashed border-slate-300 p-5 rounded-lg space-y10">
           <OrderContent
             order={order}
+            removeItem={removeItem}
           />
         </div>
 
