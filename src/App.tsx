@@ -38,7 +38,9 @@ console.log(menuItems);
           />
         </div>
 
-         <OrderTotals/>
+         <OrderTotals
+          order={order}
+         />
 
       </main>
     </>
