@@ -1,6 +1,7 @@
 import MenuItem from "./components/MenuItem";
 import OrderContent from "./components/OrderContent";
 import OrderTotals from "./components/OrderTotals";
+import TipPercentageFrom from "./components/TipPercentageFrom";
 import { menuItems } from "./data/db";
 import useOrder from "./hooks/useOrder";
 
@@ -36,11 +37,14 @@ console.log(menuItems);
             order={order}
             removeItem={removeItem}
           />
-        </div>
 
-         <OrderTotals
-          order={order}
-         />
+          <TipPercentageFrom/>
+
+          <OrderTotals
+            order={order}
+          />
+          
+        </div>
 
       </main>
     </>
