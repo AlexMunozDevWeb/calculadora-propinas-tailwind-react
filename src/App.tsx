@@ -9,7 +9,7 @@ function App() {
   
 console.log(menuItems);
 
-  const { order, addItem, removeItem, tip, setTip } = useOrder()
+  const { order, tip, setTip, addItem, removeItem, placeOrder } = useOrder()
 
   return (
     <>
@@ -33,19 +33,27 @@ console.log(menuItems);
         </div>
         
         <div className="border border-dashed border-slate-300 p-5 rounded-lg space-y10">
-          <OrderContent
-            order={order}
-            removeItem={removeItem}
-          />
+          {order.length ? (
+            <>
+              <OrderContent
+                order={order}
+                removeItem={removeItem}
+              />
 
-          <TipPercentageFrom
-            setTip={setTip}
-          />
+              <TipPercentageFrom
+                setTip={setTip}
+                tip={tip}
+              />
 
-          <OrderTotals
-            order={order}
-            tip={tip}
-          />
+              <OrderTotals
+                order={order}
+                tip={tip}
+                placeOrder={placeOrder}
+              />
+            </>
+          ) : (
+            <p className="text-center">La orden esta vacía</p>
+          ) }
 
         </div>
 
