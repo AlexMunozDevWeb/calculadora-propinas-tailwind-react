@@ -1,3 +1,5 @@
+import type {Dispatch, SetStateAction} from "react"
+
 const tipOptions = [
   {
     id: 'tip-10',
@@ -16,7 +18,11 @@ const tipOptions = [
   },
 ]
 
-export default function TipPercentageFrom() {
+type TipPercentageFrom = {
+  setTip: Dispatch<SetStateAction<number>>
+}
+
+export default function TipPercentageFrom( {setTip} : TipPercentageFrom ) {
   return (
     <div>
       <h3 className='font-black text-2xl'>Propina</h3>
@@ -30,6 +36,7 @@ export default function TipPercentageFrom() {
               type="radio"
               name="tip"
               value={tip.value}
+              onChange={ e => setTip( +e.target.value ) } // Con el + podemos hacer la suma del int+string
             />
           </div>
         ))}

@@ -9,7 +9,7 @@ function App() {
   
 console.log(menuItems);
 
-  const { order, addItem, removeItem } = useOrder()
+  const { order, addItem, removeItem, tip, setTip } = useOrder()
 
   return (
     <>
@@ -38,12 +38,14 @@ console.log(menuItems);
             removeItem={removeItem}
           />
 
-          <TipPercentageFrom/>
+          <TipPercentageFrom
+            setTip={setTip}
+          />
 
           <OrderTotals
             order={order}
           />
-          
+
         </div>
 
       </main>
