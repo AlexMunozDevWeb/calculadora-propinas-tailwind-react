@@ -44,6 +44,7 @@ console.log(menuItems);
 
           <OrderTotals
             order={order}
+            tip={tip}
           />
 
         </div>
