@@ -4,28 +4,33 @@
 
 La aplicación sigue un patrón de **componentes funcionales con hooks** en React. No utiliza librerías externas de state management ni routing — toda la lógica de estado vive en un custom hook (`useOrder`) que se consume desde el componente raíz.
 
+Los componentes están organizados en 3 capas: **ui** (base reutilizable), **menu** (sección del menú), **cart** (carrito/orden).
+
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        App.tsx                               │
-│                    (Raíz + Layout Responsive)                 │
-│                                                              │
-│  ┌─────────────────────────────┐  ┌────────────────────────┐ │
-│  │        Menú (main)          │  │  Orden (aside - desktop)│ │
-│  │                             │  │                        │ │
-│  │    grid 2-4 columnas        │  │  OrderContent          │ │
-│  │    MenuItem[] (cards)       │  │  TipPercentageForm     │ │
-│  │                             │  │  OrderTotals           │ │
-│  └─────────────────────────────┘  └────────────────────────┘ │
-│                                                              │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │  Bottom Sheet (mobile only)                             │ │
-│  │  - Barra "Menu" + handle drag                           │ │
-│  │  - OrderContent + TipPercentage + OrderTotals           │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                                                              │
-│         ◀──── useOrder() hook (estado global) ──▶            │
-│         ◀──── showOrderSheet (state local) ──▶               │
-└─────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                           App.tsx                                │
+│                    (Raíz + Layout Responsive)                    │
+│                                                                  │
+│  ┌──────────────────────────────────┐  ┌───────────────────────┐ │
+│  │          Menú (main)             │  │  Orden (aside - desk) │ │
+│  │                                  │  │                       │ │
+│  │  SearchBar                       │  │  CartHeader           │ │
+│  │  CategoryFilter                  │  │  CartItem[]           │ │
+│  │  MenuItemCard[] (grid 2-4 col)   │  │  TipSelector          │ │
+│  │                                  │  │  DiscountInput        │ │
+│  └──────────────────────────────────┘  │  OrderNotes           │ │
+│                                        │  OrderSummary         │ │
+│  ┌──────────────────────────────────┐  │  SplitBillModal       │ │
+│  │  Bottom Sheet (mobile only)      │  └───────────────────────┘ │
+│  │  CartHeader + Handle             │                            │
+│  │  CartItem[] + TipSelector        │                            │
+│  │  DiscountInput + OrderNotes      │                            │
+│  │  OrderSummary + SplitBill        │                            │
+│  └──────────────────────────────────┘                            │
+│                                                                  │
+│         ◀──── useOrder() hook (estado global) ──▶               │
+│         ◀──── showOrderSheet, search, category (local) ──▶      │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -66,28 +71,43 @@ La aplicación sigue un patrón de **componentes funcionales con hooks** en Reac
 
 ```
 src/
-├── main.tsx              # Entry point: renderiza <App /> en StrictMode
-├── App.tsx               # Componente raíz: layout responsive + bottom sheet
-├── index.css             # Directivas @tailwind + estilos base
-├── vite-env.d.ts         # Tipos de Vite para TypeScript
+├── main.tsx                  # Entry point: renderiza <App /> en StrictMode
+├── App.tsx                   # Componente raíz: layout responsive + orquestación
+├── index.css                 # Directivas @tailwind + body styles + no-scrollbar
+├── vite-env.d.ts             # Tipos de Vite para TypeScript
 │
 ├── types/
-│   └── index.ts          # MenuItem, OrderItem
+│   └── index.ts              # Category, MenuItem, OrderItem, Discount, Table
 │
 ├── hooks/
-│   └── useOrder.ts       # Custom hook: toda la lógica de estado
+│   └── useOrder.ts           # Custom hook: estado central con useCallback/useMemo
 │
 ├── helpers/
-│   └── index.ts          # formatCurrency()
+│   └── index.ts              # formatCurrency, formatPercent, calcDiscount
 │
 ├── data/
-│   └── db.ts             # Array estático de MenuItem[]
+│   └── db.ts                 # 20 menuItems, 5 categorías, 8 mesas
 │
 └── components/
-    ├── MenuItem.tsx           # Tarjeta del menú con icono
-    ├── OrderContent.tsx       # Lista de items en la orden
-    ├── TipPercentageFrom.tsx  # Selector de propina (botones)
-    └── OrderTotals.tsx        # Subtotal, propina, total y botón
+    ├── ui/                   # Componentes base reutilizables
+    │   ├── Button.tsx        # primary | secondary | ghost | danger
+    │   ├── Badge.tsx         # default | primary | surface
+    │   ├── IconButton.tsx    # primary | danger | ghost
+    │   └── Modal.tsx         # Overlay + contenido con header
+    ├── menu/                 # Sección del menú
+    │   ├── MenuItemCard.tsx  # Tarjeta de plato con precio
+    │   ├── CategoryFilter.tsx # Pills horizontales scrollables
+    │   └── SearchBar.tsx     # Input con icono + botón limpiar
+    └── cart/                 # Carrito / orden
+        ├── CartHeader.tsx    # Handle drag + título + badge mesa
+        ├── CartEmpty.tsx     # Icono + mensaje de estado vacío
+        ├── CartItem.tsx      # Ítem con controles +/- y eliminar
+        ├── TableSelector.tsx # Dropdown de selección de mesa
+        ├── TipSelector.tsx   # 4 opciones + input personalizado
+        ├── DiscountInput.tsx # Toggle % o $ + input
+        ├── OrderNotes.tsx    # Textarea para notas
+        ├── OrderSummary.tsx  # Desglose + botón guardar
+        └── SplitBillModal.tsx # Modal para dividir entre N personas
 ```
 
 ---
@@ -95,18 +115,39 @@ src/
 ## 4. Sistema de Tipos (`src/types/index.ts`)
 
 ```typescript
+export type Category = {
+  id: number       // Identificador único de categoría
+  name: string     // Nombre (Pizzas, Carnes, etc.)
+  icon: string     // Nombre del icono Material Symbols
+}
+
 export type MenuItem = {
-  id: number      // Identificador único del plato
-  name: string    // Nombre del plato
-  price: number   // Precio unitario
+  id: number       // Identificador único del plato
+  name: string     // Nombre del plato
+  price: number    // Precio unitario en €
+  categoryId: number // FK → Category.id
 }
 
 export type OrderItem = MenuItem & {
-  quantity: number // Cantidad ordenada (se incrementa al repetir click)
+  quantity: number  // Cantidad ordenada
+}
+
+export type Discount = {
+  type: 'percentage' | 'fixed'  // Tipo de descuento
+  value: number                  // Porcentaje (0-1) o cantidad fija en €
+}
+
+export type Table = {
+  id: number       // Identificador único de mesa
+  name: string     // Nombre (Mesa 1, Terraza 2, etc.)
 }
 ```
 
-**Relación**: `OrderItem` extiende `MenuItem` agregando `quantity`. Esto permite que un item de la orden herede `id`, `name` y `price` del menú original.
+**Relaciones**:
+- `OrderItem` extiende `MenuItem` agregando `quantity`
+- `MenuItem.categoryId` referencia `Category.id`
+- `Discount` se almacena como estado en `useOrder`
+- `Table` representa la mesa seleccionada
 
 ---
 
@@ -116,17 +157,34 @@ export type OrderItem = MenuItem & {
 
 | Estado | Tipo | Valor inicial | Descripción |
 |---|---|---|---|
-| `order` | `OrderItem[]` | `[]` | Lista de items en la orden actual |
-| `tip` | `number` | `0` | Porcentaje de propina seleccionado |
+| `order` | `OrderItem[]` | `[]` | Lista de items en la orden |
+| `tip` | `number` | `0` | Porcentaje de propina (0-1) |
+| `discount` | `Discount \| null` | `null` | Descuento aplicado |
+| `table` | `Table` | `{ id: 4, name: 'Mesa 4' }` | Mesa seleccionada |
+| `orderNotes` | `string` | `''` | Notas del pedido |
 
-### Métodos
+### Métodos (todos con `useCallback`)
 
 | Método | Firma | Descripción |
 |---|---|---|
-| `addItem` | `(item: MenuItem) => void` | Si el item existe, incrementa `quantity` en 1. Si no, lo agrega con `quantity: 1`. |
-| `removeItem` | `(id: MenuItem['id']) => void` | Elimina el item completo de la orden (no decrementa cantidad). |
-| `placeOrder` | `() => void` | Reinicia `order` a `[]` y `tip` a `0`. |
-| `setTip` | `Dispatch<SetStateAction<number>>` | Setter del estado `tip`. |
+| `addItem` | `(item: MenuItem) => void` | Agrega item o incrementa quantity |
+| `removeItem` | `(id: number) => void` | Elimina item completo |
+| `updateQuantity` | `(id: number, delta: number) => void` | Incrementa/decrementa quantity; elimina si llega a 0 |
+| `placeOrder` | `() => void` | Reinicia todo el estado |
+| `setTip` | `Dispatch<SetStateAction<number>>` | Setter de propina |
+| `setDiscount` | `(discount: Discount \| null) => void` | Setter de descuento |
+| `setTable` | `(table: Table) => void` | Setter de mesa |
+| `setOrderNotes` | `(notes: string) => void` | Setter de notas |
+
+### Valores computados (todos con `useMemo`)
+
+| Valor | Fórmula | Dependencias |
+|---|---|---|
+| `subtotal` | `∑(quantity × price)` | `[order]` |
+| `discountAmount` | `subtotal × value` (percentage) o `value` (fixed) | `[subtotal, discount]` |
+| `tipAmount` | `(subtotal - discountAmount) × tip` | `[subtotal, discountAmount, tip]` |
+| `total` | `subtotal - discountAmount + tipAmount` | `[subtotal, discountAmount, tipAmount]` |
+| `totalItems` | `∑(quantity)` | `[order]` |
 
 ### Flujo de `addItem`
 
@@ -134,10 +192,24 @@ export type OrderItem = MenuItem & {
 addItem(item)
   │
   ├─ item ya existe en order?
-  │    ├─ SÍ  → map sobre order, incrementar quantity del item coincidente
-  │    └─ NO  → crear {...item, quantity: 1}, agregar al final del array
+  │    ├─ SÍ  → map: incrementar quantity del item coincidente
+  │    └─ NO  → spread: [...prev, {...item, quantity: 1}]
   │
   └─ setOrder(nuevoArray)
+```
+
+### Flujo de `updateQuantity`
+
+```
+updateQuantity(id, delta)
+  │
+  ├─ newQty = quantity + delta
+  │
+  ├─ newQty <= 0?
+  │    └─ SÍ → filter: eliminar item
+  │
+  └─ newQty > 0?
+       └─ SÍ → map: actualizar quantity
 ```
 
 ---
@@ -146,207 +218,335 @@ addItem(item)
 
 ### 6.1 `App.tsx` — Componente Raíz
 
-**Responsabilidad**: Orquestar el layout responsive y conectar los componentes con el hook `useOrder`.
+**Responsabilidad**: Orquestar layout, filtrado de menú, y conectar componentes con `useOrder`.
 
-**Estado adicional**:
+**Estado local**:
 ```typescript
-const [showOrderSheet, setShowOrderSheet] = useState(false)
+const [showOrderSheet, setShowOrderSheet] = useState(false)    // Bottom sheet
+const [selectedCategory, setSelectedCategory] = useState<number | null>(null)  // Filtro
+const [searchQuery, setSearchQuery] = useState('')             // Búsqueda
+const [showSplitBill, setShowSplitBill] = useState(false)      // Modal dividir
 ```
-Controla la visibilidad del bottom sheet en mobile.
+
+**Lógica de filtrado** (`useMemo`):
+```typescript
+const filteredItems = useMemo(() => {
+  return menuItems.filter(item => {
+    const matchesCategory = selectedCategory === null || item.categoryId === selectedCategory
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase())
+    return matchesCategory && matchesSearch
+  })
+}, [selectedCategory, searchQuery])
+```
 
 **Layout responsive**:
 
 | Breakpoint | Comportamiento |
 |---|---|
-| **Desktop (md+)** | `flex-row-reverse`: Menú a la izquierda, resumen de orden como sidebar sticky a la derecha |
-| **Mobile (<md)** | Columna única: Menú completo + bottom sheet colapsable |
+| **Desktop (md+)** | `flex-row-reverse`: Menú a la izquierda, resumen sticky a la derecha |
+| **Mobile (<md)** | Columna única: Menú + bottom sheet colapsable |
 
 **Estructura visual - Desktop**:
 ```
-┌──────────────────────────────────────────────────────┐
-│  Header: Logo "LuxeDine POS" + icons (history, gear) │
-├────────────────────────────┬─────────────────────────┤
-│  Menú (main - 2/3)        │  Resumen (aside - 1/3)  │
-│  grid 3-4 columnas        │  sticky, border-left    │
-│  MenuItem[] cards          │  OrderContent           │
-│                            │  TipPercentageForm      │
-│                            │  OrderTotals            │
-└────────────────────────────┴─────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│  Header: Logo "LuxeDine POS" + TableSelector                 │
+├──────────────────────────────┬───────────────────────────────┤
+│  Menú (main - 2/3)           │  Resumen (aside - 1/3)        │
+│  SearchBar                   │  CartHeader                   │
+│  CategoryFilter              │  CartItem[]                   │
+│  MenuItemCard[] (grid)       │  TipSelector                  │
+│                              │  DiscountInput                │
+│                              │  OrderNotes                   │
+│                              │  OrderSummary                 │
+│                              │  Dividir Cuenta               │
+└──────────────────────────────┴───────────────────────────────┘
 ```
 
 **Estructura visual - Mobile**:
 ```
 ┌────────────────────────────┐
-│  Header: Logo + icons      │
+│  Header: Logo + TableSel.  │
 ├────────────────────────────┤
-│  Menú (grid 2 columnas)   │
-│  MenuItem[] cards          │
+│  Menú (grid 2 columnas)    │
+│  SearchBar                 │
+│  CategoryFilter            │
+│  MenuItemCard[]            │
 ├────────────────────────────┤
 │  Bottom Sheet (fixed)      │
 │  ┌──────────────────────┐  │
-│  │ Handle + "Menu" bar  │  │
-│  ├──────────────────────┤  │
-│  │ OrderContent         │  │
-│  │ TipPercentageForm    │  │
-│  │ OrderTotals          │  │
+│  │ CartHeader (handle)  │  │
+│  │ CartItem[]           │  │
+│  │ TipSelector          │  │
+│  │ DiscountInput        │  │
+│  │ OrderNotes           │  │
+│  │ OrderSummary         │  │
+│  │ Dividir Cuenta       │  │
 │  └──────────────────────┘  │
 └────────────────────────────┘
 ```
 
-**Comportamiento del Bottom Sheet**:
-- Inicia collapsed (solo muestra barra "Menu")
-- Se abre automáticamente al agregar un item (`handleAddItem`)
-- Se abre/cierra al hacer click en la barra
-- Contenido con scroll y max-height 60vh
+### 6.2 Componentes UI (`src/components/ui/`)
 
-### 6.2 `MenuItem.tsx` — Tarjeta del Menú
+#### `Button.tsx`
 
-**Props**:
-```typescript
-{
-  item: MenuItem                    // Datos del plato
-  addItem: (item: MenuItem) => void // Callback al hacer click
-}
-```
+| Prop | Tipo | Default | Opciones |
+|---|---|---|---|
+| `variant` | `string` | `secondary` | `primary`, `secondary`, `ghost`, `danger` |
+| `size` | `string` | `md` | `sm`, `md`, `lg` |
+| `disabled` | `boolean` | `false` | - |
+| `fullWidth` | `boolean` | `false` | - |
 
-**Render**: Card con fondo `surface-card`, icono Material Symbols en círculo, nombre del plato y precio en color primary. Hover con elevación y sombra.
+#### `Badge.tsx`
 
-**Clases principales**: `bg-surface-card rounded-lg p-4 border border-white/5 shadow-sm hover:shadow-[0_20px_25px_-5px_rgba(0,0,0,0.3)] hover:-translate-y-1`
+| Prop | Tipo | Default | Opciones |
+|---|---|---|---|
+| `label` | `string` | - | Texto del badge |
+| `variant` | `string` | `default` | `default`, `primary`, `surface` |
+| `icon` | `string` | - | Nombre de Material Symbol |
 
-### 6.3 `OrderContent.tsx` — Lista de la Orden
+#### `IconButton.tsx`
 
-**Props**:
-```typescript
-{
-  order: OrderItem[]                            // Items actuales
-  removeItem: (id: MenuItem['id']) => void      // Callback de eliminación
-}
-```
+| Prop | Tipo | Default | Opciones |
+|---|---|---|---|
+| `icon` | `string` | - | Nombre de Material Symbol |
+| `variant` | `string` | `ghost` | `primary`, `danger`, `ghost` |
+| `size` | `string` | `sm` | `sm` (28px), `md` (36px) |
+| `label` | `string` | - | aria-label |
 
-**Render**: Lista scrollable con items que muestran cantidad (`Nx`), nombre, subtotal y botón de eliminar (icono `close`). Separadores con `border-b border-slate-700/50`.
+#### `Modal.tsx`
 
-### 6.4 `TipPercentageFrom.tsx` — Selector de Propina
-
-**Props**:
-```typescript
-{
-  setTip: Dispatch<SetStateAction<number>> // Setter del hook
-  tip: number                              // Valor actual seleccionado
-}
-```
-
-**Opciones hardcodeadas**:
-
-| ID | Value | Label |
+| Prop | Tipo | Default |
 |---|---|---|
-| `tip-10` | `0.10` | 10% |
-| `tip-20` | `0.20` | 20% |
-| `tip-50` | `0.50` | 50% |
+| `isOpen` | `boolean` | - |
+| `onClose` | `() => void` | - |
+| `title` | `string` | - |
+| `children` | `ReactNode` | - |
 
-**Render**: Grid de 3 botones. El seleccionado tiene fondo `bg-primary-container` y escala `scale-105`. Los no seleccionados tienen borde sutil.
+### 6.3 Componentes Menu (`src/components/menu/`)
 
-**Nombre del archivo**: `TipPercentageFrom.tsx` — contiene un typo (`From` en lugar de `Form`).
+#### `MenuItemCard.tsx`
 
-### 6.5 `OrderTotals.tsx` — Resumen de Totales
+| Prop | Tipo |
+|---|---|
+| `item` | `MenuItem` |
+| `onAdd` | `(item: MenuItem) => void` |
 
-**Props**:
-```typescript
-{
-  order: OrderItem[]
-  tip: number
-  placeOrder: () => void
-}
-```
+**Render**: Card con icono Material Symbols en círculo, nombre y precio con `formatCurrency()`. Hover con elevación y translate.
 
-**Cálculos**:
+#### `CategoryFilter.tsx`
 
-| Valor | Fórmula | Implementación |
+| Prop | Tipo |
+|---|---|
+| `selected` | `number \| null` |
+| `onSelect` | `(id: number \| null) => void` |
+
+**Render**: Pills horizontales scrollables. "Todos" + 5 categorías con icono. El seleccionado usa `bg-primary-container`.
+
+#### `SearchBar.tsx`
+
+| Prop | Tipo |
+|---|---|
+| `onSearch` | `(query: string) => void` |
+
+**Render**: Input con icono `search` a la izquierda, botón `close` a la derecha cuando hay texto.
+
+### 6.4 Componentes Cart (`src/components/cart/`)
+
+#### `CartHeader.tsx`
+
+| Prop | Tipo |
+|---|---|
+| `title` | `string` |
+| `tableLabel` | `string` |
+| `itemCount` | `number` |
+| `onClick` | `() => void` |
+
+**Render**: Handle de arrastre, ícono de carrito, conteo de artículos o título, badge de mesa.
+
+#### `CartEmpty.tsx`
+
+| Prop | Tipo | Default |
 |---|---|---|
-| Subtotal | `∑(quantity × price)` | `useMemo` con dependencia `[order]` |
-| Propina | `subtotal × tip` | `useMemo` con dependencia `[tip, subtotalAmount]` |
-| Total | `subtotal + propina` | `useMemo` con dependencia `[tipAmount, subtotalAmount]` |
+| `message` | `string` | `'Agrega artículos del menú'` |
 
-**Botón**: Full-width, `bg-[#059669]`, texto blanco, icono `check_circle`. Se deshabilita cuando el total es 0.
+**Render**: Ícono `shopping_cart` tenue + mensaje.
+
+#### `CartItem.tsx`
+
+| Prop | Tipo |
+|---|---|
+| `item` | `OrderItem` |
+| `onUpdateQuantity` | `(id: number, delta: number) => void` |
+| `onRemove` | `(id: number) => void` |
+
+**Render**: Fila con badge de cantidad, nombre, controles +/- (IconButton), subtotal, botón eliminar.
+
+#### `TableSelector.tsx`
+
+| Prop | Tipo |
+|---|---|
+| `selected` | `Table` |
+| `onSelect` | `(table: Table) => void` |
+
+**Render**: Dropdown con 8 mesas. Se cierra al seleccionar o al hacer click fuera.
+
+#### `TipSelector.tsx`
+
+| Prop | Tipo |
+|---|---|
+| `tip` | `number` |
+| `setTip` | `Dispatch<SetStateAction<number>>` |
+
+**Render**: Grid 3 columnas con 4 opciones (10%, 15%, 20%, 50%) + input numérico para porcentaje libre.
+
+#### `DiscountInput.tsx`
+
+| Prop | Tipo |
+|---|---|
+| `discount` | `Discount \| null` |
+| `onApply` | `(discount: Discount \| null) => void` |
+
+**Render**: Toggle `%` / `$` + input numérico. Se aplica al perder foco o presionar Enter.
+
+#### `OrderNotes.tsx`
+
+| Prop | Tipo |
+|---|---|
+| `notes` | `string` |
+| `onChange` | `(notes: string) => void` |
+
+**Render**: Textarea de 2 filas con placeholder.
+
+#### `OrderSummary.tsx`
+
+| Prop | Tipo |
+|---|---|
+| `order` | `OrderItem[]` |
+| `tip` | `number` |
+| `discount` | `Discount \| null` |
+| `subtotal` | `number` |
+| `discountAmount` | `number` |
+| `tipAmount` | `number` |
+| `total` | `number` |
+| `onPlaceOrder` | `() => void` |
+
+**Render**: Desglose con artículos, descuento (si existe), propina (si > 0), total con `formatCurrency()`, botón "Guardar Pedido".
+
+#### `SplitBillModal.tsx`
+
+| Prop | Tipo |
+|---|---|
+| `isOpen` | `boolean` |
+| `onClose` | `() => void` |
+| `total` | `number` |
+
+**Render**: Modal con stepper (2-20 personas), display del total original y monto por persona.
 
 ---
 
 ## 7. Utilidades (`src/helpers/index.ts`)
 
 ```typescript
-export function formatCurrency(quantity: number): string {
-  return new Intl.NumberFormat('en-US', {
+export function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('es-ES', {
     style: 'currency',
-    currency: 'USD'
-  }).format(quantity)
+    currency: 'EUR',
+  }).format(amount)
+}
+
+export function formatPercent(value: number): string {
+  return `${(value * 100).toFixed(0)}%`
+}
+
+export function calcDiscount(amount: number, discountPercent: number): number {
+  return amount * discountPercent
 }
 ```
 
-**Uso**: Se invoca en `OrderContent.tsx` y `OrderTotals.tsx` para formatear precios y totales como `$XX.XX`.
+**Uso**: `formatCurrency` se usa en `MenuItemCard`, `CartItem`, `OrderSummary` y `SplitBillModal`. `formatPercent` se usa en `TipSelector` y `OrderSummary`.
 
 ---
 
 ## 8. Base de Datos (`src/data/db.ts`)
 
-Array estático de 12 items de menú tipados como `MenuItem[]`:
+### Categorías (5)
 
-| ID | Nombre | Precio |
+| ID | Nombre | Icono |
 |---|---|---|
-| 1 | Pizza a la Leña Chica | $30 |
-| 2 | Pizza a la Leña Mediana | $50 |
-| 3 | Rebanada de Pay de Limón | $30 |
-| 4 | Rebanada de Pastel de Chocolate | $30 |
-| 5 | Jugo de Naranja | $15 |
-| 6 | Pizza a la Leña Grande | $70 |
-| 7 | Rib Eye 800g | $100 |
-| 8 | Jugo de Naranja (duplicado) | $15 |
-| 9 | Tequila | $40 |
-| 10 | Rebanada de Pay de Queso | $30 |
-| 11 | Café Americano | $20 |
-| 12 | Café Capuchino | $40 |
+| 1 | Pizzas | `local_pizza` |
+| 2 | Carnes | `lunch_dining` |
+| 3 | Postres | `cake` |
+| 4 | Bebidas | `local_bar` |
+| 5 | Cafés | `coffee` |
 
-**Nota**: Los items 5 y 8 son duplicados ("Jugo de Naranja" al mismo precio).
+### Menú (20 ítems)
+
+| ID | Nombre | Precio | Categoría |
+|---|---|---|---|
+| 1 | Pizza a la Leña Chica | 30 € | Pizzas |
+| 2 | Pizza a la Leña Mediana | 50 € | Pizzas |
+| 3 | Pizza a la Leña Grande | 70 € | Pizzas |
+| 4 | Pizza Hawaiana | 55 € | Pizzas |
+| 5 | Pizza Pepperoni | 55 € | Pizzas |
+| 6 | Rib Eye 800g | 100 € | Carnes |
+| 7 | New York 600g | 90 € | Carnes |
+| 8 | Chuleta de Cerdo | 75 € | Carnes |
+| 9 | Rebanada de Pay de Limón | 30 € | Postres |
+| 10 | Rebanada de Pastel de Chocolate | 30 € | Postres |
+| 11 | Rebanada de Pay de Queso | 30 € | Postres |
+| 12 | Tiramisú | 35 € | Postres |
+| 13 | Jugo de Naranja | 15 € | Bebidas |
+| 14 | Limonada | 15 € | Bebidas |
+| 15 | Agua Mineral | 10 € | Bebidas |
+| 16 | Tequila | 40 € | Bebidas |
+| 17 | Café Americano | 20 € | Cafés |
+| 18 | Café Capuchino | 40 € | Cafés |
+| 19 | Café Espresso | 25 € | Cafés |
+| 20 | Chocolate Caliente | 30 € | Cafés |
+
+### Mesas (8)
+
+| ID | Nombre |
+|---|---|
+| 1 | Mesa 1 |
+| 2 | Mesa 2 |
+| 3 | Mesa 3 |
+| 4 | Mesa 4 |
+| 5 | Mesa 5 |
+| 6 | Mesa 6 |
+| 7 | Terraza 1 |
+| 8 | Terraza 2 |
 
 ---
 
 ## 9. Configuración de Tailwind
 
 ```javascript
-// tailwind.config.js
+// tailwind.config.js (fragmentos relevantes)
 export default {
   darkMode: "class",
   theme: {
     extend: {
       colors: {
-        // Paleta principal
         "primary": "#68dba9",
         "primary-container": "#25a475",
+        "on-primary": "#003825",
+        "on-primary-container": "#00311f",
         "secondary": "#4edea3",
         "secondary-container": "#00a572",
-
-        // Superficies
         "background": "#0b1326",
         "surface": "#0b1326",
         "surface-card": "#1E293B",
         "surface-hover": "#334155",
         "surface-container": "#171f33",
+        "surface-container-low": "#131b2e",
         "surface-container-high": "#222a3d",
         "surface-container-highest": "#2d3449",
-
-        // Texto
         "text-primary": "#F8FAFC",
         "text-secondary": "#94A3B8",
-
-        // Acciones
         "destructive": "#DC2626",
       },
-      fontFamily: {
-        "display-lg": ["Plus Jakarta Sans"],
-        "headline-lg": ["Plus Jakarta Sans"],
-        "title-lg": ["Plus Jakarta Sans"],
-        "body-md": ["Plus Jakarta Sans"],
-        "label-md": ["Plus Jakarta Sans"],
-        "label-sm": ["Plus Jakarta Sans"],
-      },
+      fontFamily: { /* Plus Jakarta Sans para todos los tokens */ },
       spacing: {
         "margin-mobile": "20px",
         "margin-desktop": "40px",
@@ -356,13 +556,14 @@ export default {
         "stack-md": "16px",
         "stack-lg": "32px",
         "container-max": "1280px",
+        "safe": "env(safe-area-inset-bottom)",
       },
     },
   },
 }
 ```
 
-**Personalizaciones**: Colores del sistema de diseño Material Design 3, fuente Plus Jakarta Sans, espaciado custom para mobile/desktop.
+**Personalizaciones**: Paleta completa Material Design 3, fuente Plus Jakarta Sans en todos los tokens, espaciado custom para mobile/desktop con `safe-area-inset-bottom` para iOS.
 
 ---
 
@@ -372,7 +573,7 @@ export default {
 |---|---|---|
 | `dev` | `vite` | Inicia el dev server en `localhost:5173` |
 | `build` | `tsc && vite build` | Type-check + build de producción |
-| `lint` | `eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0` | Linting sin warnings permitidos |
+| `lint` | `eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0` | Linting sin warnings |
 | `preview` | `vite preview` | Preview de la build de producción |
 
 ---
@@ -383,19 +584,25 @@ export default {
 db.ts (datos estáticos)
   │
   ▼
-App.tsx ──map──▶ MenuItem ──onClick──▶ handleAddItem()
+App.tsx ──filter──▶ filteredItems (useMemo)
+  │
+  ├──map──▶ MenuItemCard ──onClick──▶ handleAddItem()
   │                                        │
   │                                        ├─ addItem() → useOrder
   │                                        └─ setShowOrderSheet(true)
   ▼
-useOrder (order[], tip)
+useOrder (order[], tip, discount, table, orderNotes)
   │
-  ├──▶ OrderContent (recibe order, removeItem)
-  ├──▶ TipPercentageForm (recibe tip, setTip)
-  └──▶ OrderTotals (recibe order, tip, placeOrder)
+  ├──▶ CartHeader (totalItems, table.name)
+  ├──▶ CartItem[] (order, updateQuantity, removeItem)
+  ├──▶ TipSelector (tip, setTip)
+  ├──▶ DiscountInput (discount, setDiscount)
+  ├──▶ OrderNotes (orderNotes, setOrderNotes)
+  ├──▶ OrderSummary (subtotal, discountAmount, tipAmount, total, placeOrder)
+  └──▶ SplitBillModal (total)
 ```
 
-**Patrón**: Unidireccional (top-down). El estado fluye desde `App` (que consume `useOrder`) hacia los componentes hijos via props. Las interacciones fluyen de vuelta via callbacks.
+**Patrón**: Unidireccional (top-down). El estado fluye desde `App` via props. Las interacciones fluyen de vuelta via callbacks. Todo el estado mutante vive en `useOrder`.
 
 ---
 
@@ -434,21 +641,10 @@ Ver `docs/stitch-commands.md` para la documentación completa de comandos CLI.
 
 ---
 
-## 13. Problemas Conocidos
-
-| # | Problema | Ubicación | Severidad | Estado |
-|---|---|---|---|---|
-| 1 | Typo en nombre de archivo (`From` → `Form`) | `TipPercentageFrom.tsx` | Baja | Pendiente |
-| 2 | Item duplicado en la base de datos | `db.ts:5` y `db.ts:8` | Baja | Pendiente |
-| 3 | Título de `index.html` actualizado | `index.html` | - | Resuelto |
-| 4 | `useCallback` → `useMemo` para valores | `OrderTotals.tsx` | - | Resuelto |
-| 5 | Inconsistencia de moneda (`€` vs `$`) | `MenuItem.tsx` | - | Resuelto |
-
----
-
-## 14. Guía de Contribución
+## 13. Guía de Contribución
 
 1. Crear una rama desde `main`
 2. Hacer cambios siguiendo la convención de componentes funcionales + TypeScript
 3. Ejecutar `npm run lint` antes de commitear
-4. Crear pull request con descripción del cambio
+4. Ejecutar `npm run build` para verificar que no hay errores de tipo
+5. Crear pull request con descripción del cambio

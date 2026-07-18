@@ -4,11 +4,17 @@ Aplicación web POS (Point of Sale) para calcular propinas y gestionar órdenes 
 
 ## Características
 
-- Dark mode con paleta de colores emerald/esmeralda
-- Menú interactivo con 12 platos de restaurante en grid responsive
-- Agregar y eliminar items de la orden
-- Selección de propina (10%, 20%, 50%)
-- Cálculo de subtotal, propina y total en tiempo real
+- **Dark mode** con paleta de colores emerald/esmeralda
+- **Menú interactivo** con 20 platos organizados en 5 categorías
+- **Búsqueda en tiempo real** de artículos del menú
+- **Filtro por categoría** (Pizzas, Carnes, Postres, Bebidas, Cafés)
+- **Controles de cantidad** (+/-) en cada item del carrito
+- **Selector de mesa** con 8 opciones (6 interiores + 2 terraza)
+- **Propina personalizable**: 4 opciones predefinidas + input libre
+- **Descuentos**: porcentaje o cantidad fija
+- **Notas del pedido** para indicaciones especiales
+- **Dividir cuenta** entre 2-20 personas
+- **Resumen detallado**: artículos, descuento, propina, total
 - **Desktop**: Sidebar de resumen a la derecha (sticky)
 - **Mobile**: Bottom sheet colapsable que se abre al agregar items
 - Iconografía con Material Symbols
@@ -73,7 +79,7 @@ npm run lint
 calculadora-propinas-taildwin/
 ├── index.html                    # Entry HTML con Google Fonts
 ├── package.json                  # Dependencias y scripts
-├── tailwind.config.js            # Configuración de Tailwind (colores, fuentes, spacing)
+├── tailwind.config.js            # Configuración de Tailwind
 ├── vite.config.ts                # Configuración de Vite
 ├── tsconfig.json                 # Configuración de TypeScript
 ├── opencode.json                 # Configuración MCP Stitch
@@ -86,18 +92,33 @@ calculadora-propinas-taildwin/
     ├── App.tsx                   # Componente raíz (layout responsive)
     ├── index.css                 # Estilos base y Tailwind
     ├── types/
-    │   └── index.ts              # Definiciones de tipos
+    │   └── index.ts              # Category, MenuItem, OrderItem, Discount, Table
     ├── hooks/
     │   └── useOrder.ts           # Hook de gestión de orden
     ├── helpers/
-    │   └── index.ts              # Utilidades (formatCurrency)
+    │   └── index.ts              # formatCurrency, formatPercent, calcDiscount
     ├── data/
-    │   └── db.ts                 # Base de datos del menú
+    │   └── db.ts                 # Menú (20 ítems), categorías (5), mesas (8)
     └── components/
-        ├── MenuItem.tsx           # Tarjeta de plato del menú
-        ├── OrderContent.tsx       # Lista de items en la orden
-        ├── TipPercentageFrom.tsx  # Selector de propina
-        └── OrderTotals.tsx        # Resumen de totales
+        ├── ui/                   # Componentes base reutilizables
+        │   ├── Button.tsx        # Botón con 4 variantes y 3 tamaños
+        │   ├── Badge.tsx         # Badge con 3 variantes
+        │   ├── IconButton.tsx    # Botón de ícono con 3 variantes
+        │   └── Modal.tsx         # Modal con overlay
+        ├── menu/                 # Sección del menú
+        │   ├── MenuItemCard.tsx  # Tarjeta de plato
+        │   ├── CategoryFilter.tsx # Filtro horizontal de categorías
+        │   └── SearchBar.tsx     # Búsqueda en tiempo real
+        └── cart/                 # Carrito / orden
+            ├── CartHeader.tsx    # Handle + título + badge de mesa
+            ├── CartEmpty.tsx     # Estado vacío del carrito
+            ├── CartItem.tsx      # Ítem con controles +/-
+            ├── TableSelector.tsx # Dropdown de selección de mesa
+            ├── TipSelector.tsx   # Propinas predefinidas + personalizada
+            ├── DiscountInput.tsx # Descuento porcentaje o fijo
+            ├── OrderNotes.tsx    # Notas del pedido
+            ├── OrderSummary.tsx  # Desglose de totales + botón guardar
+            └── SplitBillModal.tsx # Modal para dividir la cuenta
 ```
 
 ## Extensión de VSCode recomendada
