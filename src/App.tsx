@@ -106,7 +106,7 @@ function App() {
 
       <div className="flex flex-col md:flex-row-reverse max-w-container-max mx-auto">
         {/* Desktop: Order Summary Right Side */}
-        <aside className="hidden md:block md:w-1/3 md:border-l border-white/5 bg-surface-container-low p-6 sticky top-[73px] h-[calc(100vh-73px)] overflow-y-auto">
+        <aside className="hidden md:block md:w-1/3 md:border-l border-white/5 bg-surface-container-low p-6 sticky top-[73px] h-[calc(100vh-73px)] overflow-y-auto custom-scrollbar">
           <div className="flex justify-between items-center mb-stack-md">
             <h2 className="font-title-lg text-title-lg text-text-primary">Resumen de Orden</h2>
             <span className="font-label-sm text-label-sm text-text-secondary bg-surface-hover px-2 py-1 rounded-full">{table.name}</span>
