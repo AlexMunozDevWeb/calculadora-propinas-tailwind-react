@@ -1,6 +1,8 @@
 # Calculadora de Propinas
 
-Aplicación web POS (Point of Sale) para calcular propinas y gestionar órdenes en restaurante. Desarrollada con React, TypeScript y Tailwind CSS. Diseño visual generado con Google Stitch.
+Aplicación web POS (Point of Sale) para calcular propinas y gestionar órdenes en restaurante. Desarrollada con React, TypeScript y Tailwind CSS. Diseño visual generado con Google Stitch. https://calculadora-propinas-tailwind-react.netlify.app/  
+
+<img width="1000" height="594" alt="image" src="https://github.com/user-attachments/assets/a081115b-2c01-4545-89d1-f3524d79ea45" /> 
 
 ## Características
 
